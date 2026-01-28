@@ -4,34 +4,45 @@ class SuggestionsEngine:
 
         suggestions = []
 
-        if metrics["commit_activity"] == "Stale":
+        commit = metrics.get("commit_activity")
+        contributors = metrics.get("contributors")
+        pr = metrics.get("pull_request_hygiene")
+        ci = metrics.get("ci_cd")
+        docs = metrics.get("documentation")
+
+        # Commit Activity
+        if commit in ["Stale", "Low"]:
             suggestions.append(
-                "Increase commit frequency by enforcing smaller, more frequent merges."
+                "Increase commit frequency by encouraging smaller and more frequent merges."
             )
 
-        if metrics["contributors"] == "High Risk":
+        # Contributors
+        if contributors in ["High Risk", "Single Contributor"]:
             suggestions.append(
-                "Reduce single-contributor risk by encouraging more engineers to contribute."
+                "Reduce bus factor by encouraging more contributors and code reviewers."
             )
 
-        if metrics["pr_hygiene"] == "Risky":
+        # PR Hygiene
+        if pr in ["Risky", "Poor"]:
             suggestions.append(
-                "Improve PR hygiene by enforcing reviews and reducing PR cycle time."
+                "Introduce mandatory code reviews and reduce PR cycle time."
             )
 
-        if metrics["ci_presence"] == "Missing":
+        # CI/CD
+        if ci == "Missing":
             suggestions.append(
-                "Add a GitHub Actions workflow for automated build and tests."
+                "Add a CI pipeline using GitHub Actions to run build and test workflows."
             )
 
-        if metrics["documentation"] == "Missing":
+        # Documentation
+        if docs in ["Missing", "Weak"]:
             suggestions.append(
-                "Add a README with setup, usage, and contribution guidelines."
+                "Add or improve README with setup instructions, usage examples, and contribution guide."
             )
 
         if not suggestions:
             suggestions.append(
-                "Repository practices look healthy. Focus on continuous improvement."
+                "Repository practices look healthy. Focus on scaling and automation."
             )
 
         return suggestions
