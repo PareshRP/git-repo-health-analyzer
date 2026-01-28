@@ -157,6 +157,7 @@ async function analyze(){
     });
 
     const data=await res.json();
+    console.log("API RESPONSE:", data);
     loading.innerText="";
 
     results.innerHTML=`
