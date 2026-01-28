@@ -115,12 +115,13 @@ button:hover{
 </div>
 
 <div id="loading" class="loading"></div>
-
 <div id="results"></div>
 
 </div>
 
 <script>
+
+/* ---------- Helpers ---------- */
 
 function scoreFromStatus(status){
   if(["Healthy","Low Risk","Present","Good"].includes(status)) return 100;
@@ -140,6 +141,24 @@ function clearUI(){
   document.getElementById("results").innerHTML="";
 }
 
+function renderMetric(name,status){
+  const score = scoreFromStatus(status || "Unknown");
+
+  return `
+  <div class="metric">
+    <div class="metric-title">
+      <span>${name}</span>
+      <span class="${colorClass(status || 'Unknown')}">${status || "Unknown"}</span>
+    </div>
+    <div class="bar-bg">
+      <div class="bar-fill" style="width:${score}%"></div>
+    </div>
+  </div>
+  `;
+}
+
+/* ---------- Main ---------- */
+
 async function analyze(){
 
   const repo=document.getElementById("repo").value;
@@ -157,10 +176,9 @@ async function analyze(){
     });
 
     const data=await res.json();
-    console.log("API RESPONSE:", data);
     loading.innerText="";
 
-    results.innerHTML=`
+    results.innerHTML = `
     <div class="section">
       <h2>Overall Health</h2>
       <h3>${data.health_score} / 100 — ${data.status}</h3>
@@ -176,35 +194,19 @@ async function analyze(){
       ${renderMetric("Documentation",data.metrics.documentation)}
 
     </div>
+
+    <div class="section">
+      <h2>Recommendations</h2>
+      <ul>
+        ${(data.suggestions || []).map(s => `<li>${s}</li>`).join("")}
+      </ul>
+    </div>
     `;
 
   }catch(e){
-    console.error("FRONTEND ERROR:", e);
-    throw e;
-}
-
-function renderMetric(name,status){
-
-  const score=scoreFromStatus(status || "Unknown");
-
-  return `
-  <div class="metric">
-    <div class="metric-title">
-      <span>${name}</span>
-      <span class="${colorClass(status || 'Unknown')}">${status || "Unknown"}</span>
-    </div>
-    <div class="bar-bg">
-      <div class="bar-fill" style="width:${score}%"></div>
-    </div>
-  </div>
-
-  <div class="section">
-    <h2>Recommendations</h2>
-    <ul>
-      ${(data.suggestions || []).map(s => `<li>${s}</li>`).join("")}
-    </ul>
-  </div>
-  `;
+    console.error("FRONTEND ERROR:",e);
+    loading.innerText="Invalid repository or server error";
+  }
 }
 
 </script>
