@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <meta charset="UTF-8">
 <title>Git Repository Health Analyzer</title>
 
@@ -101,6 +102,9 @@ button:hover {
     Clear
   </button>
 
+  <canvas id="overallChart" height="180"></canvas>
+  <canvas id="radarChart" height="220"></canvas>
+
   <div id="loading" class="loading"></div>
   <div id="result"></div>
 </div>
@@ -120,13 +124,14 @@ function clearUI() {
   document.getElementById("result").innerHTML = "";
 }
 
+let overallChart = null;
+let radarChart = null;
+
 async function analyze() {
   const repo = document.getElementById("repo").value;
   const loading = document.getElementById("loading");
-  const resultDiv = document.getElementById("result");
 
   loading.innerText = "Analyzing...";
-  resultDiv.innerHTML = "";
 
   try {
     const res = await fetch("/analyze", {
@@ -136,45 +141,84 @@ async function analyze() {
     });
 
     const data = await res.json();
-
     loading.innerText = "";
 
-    resultDiv.innerHTML = `
-      <div class="status">
-        <h3>Final Score: ${data.health_score} (${data.status})</h3>
+    const scores = {
+      "Commit Activity": mapScore(data.metrics.commit_activity),
+      "Contributor Diversity": mapScore(data.metrics.contributors),
+      "PR Hygiene": mapScore(data.metrics.pull_request_hygiene),
+      "CI/CD": mapScore(data.metrics.ci_cd),
+      "Documentation": mapScore(data.metrics.documentation)
+    };
 
-        <div class="metric">
-          <span>Commit Activity</span>
-          <span class="${colorClass(data.metrics.commit_activity)}">${data.metrics.commit_activity}</span>
-        </div>
-
-        <div class="metric">
-          <span>Contributor Diversity</span>
-          <span class="${colorClass(data.metrics.contributors)}">${data.metrics.contributors}</span>
-        </div>
-
-        <div class="metric">
-          <span>PR Hygiene</span>
-          <span class="${colorClass(data.metrics.pull_request_hygiene)}">${data.metrics.pull_request_hygiene}</span>
-        </div>
-
-        <div class="metric">
-          <span>CI/CD</span>
-          <span class="${colorClass(data.metrics.ci_cd)}">${data.metrics.ci_cd}</span>
-        </div>
-
-        <div class="metric">
-          <span>Documentation</span>
-          <span class="${colorClass(data.metrics.documentation)}">${data.metrics.documentation}</span>
-        </div>
-      </div>
-    `;
+    renderOverallChart(data.health_score);
+    renderRadarChart(scores);
 
   } catch (err) {
-    loading.innerText = "";
-    resultDiv.innerHTML = "<div class='status bad'>Invalid repository or server error</div>";
+    loading.innerText = "Invalid repository or server error";
   }
 }
+
+function mapScore(status){
+  if(["Healthy","Low Risk","Present","Good"].includes(status)) return 100;
+  if(["Moderate","Acceptable","Weak"].includes(status)) return 70;
+  return 30;
+}
+
+function renderOverallChart(score){
+  const ctx = document.getElementById("overallChart");
+
+  if(overallChart) overallChart.destroy();
+
+  overallChart = new Chart(ctx,{
+    type:"doughnut",
+    data:{
+      labels:["Health","Remaining"],
+      datasets:[{
+        data:[score,100-score],
+        backgroundColor:["#22c55e","#1e293b"]
+      }]
+    },
+    options:{
+      plugins:{
+        legend:{display:false},
+        title:{
+          display:true,
+          text:`Overall Health Score: ${score}`
+        }
+      }
+    }
+  });
+}
+
+function renderRadarChart(scores){
+  const ctx = document.getElementById("radarChart");
+
+  if(radarChart) radarChart.destroy();
+
+  radarChart = new Chart(ctx,{
+    type:"radar",
+    data:{
+      labels:Object.keys(scores),
+      datasets:[{
+        label:"Repository Health",
+        data:Object.values(scores),
+        backgroundColor:"rgba(37,99,235,0.3)",
+        borderColor:"#2563eb"
+      }]
+    },
+    options:{
+      scales:{
+        r:{
+          min:0,
+          max:100,
+          ticks:{stepSize:20}
+        }
+      }
+    }
+  });
+}
+
 </script>
 
 </body>
