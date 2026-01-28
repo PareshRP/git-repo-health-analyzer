@@ -1,30 +1,169 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Git Repo Health Analyzer</title>
+<meta charset="UTF-8">
+<title>Git Repository Health Analyzer</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #0f172a;
+  color: #e5e7eb;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.card {
+  background: #020617;
+  padding: 32px;
+  border-radius: 10px;
+  width: 520px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.6);
+}
+
+h1 {
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+
+p {
+  color: #94a3b8;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  margin-bottom: 12px;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  background: #2563eb;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1d4ed8;
+}
+
+.status {
+  margin-top: 20px;
+  padding: 12px;
+  border-radius: 6px;
+  background: #020617;
+  border: 1px solid #1e293b;
+}
+
+.metric {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid #1e293b;
+}
+
+.metric:last-child {
+  border-bottom: none;
+}
+
+.good { color: #22c55e; }
+.warn { color: #facc15; }
+.bad { color: #ef4444; }
+
+.loading {
+  text-align: center;
+  margin-top: 10px;
+  color: #93c5fd;
+}
+</style>
 </head>
+
 <body>
 
-<h2>Git Repository Health Analyzer</h2>
+<div class="card">
+  <h1>Git Repository Health Analyzer</h1>
+  <p>Analyze engineering health of any public GitHub repository</p>
 
-<input id="repo" placeholder="https://github.com/org/repo" size="40"/>
-<button onclick="analyze()">Analyze</button>
+  <input id="repo" placeholder="https://github.com/org/repo"/>
+  <button onclick="analyze()">Analyze</button>
 
-<pre id="output"></pre>
+  <div id="loading" class="loading"></div>
+  <div id="result"></div>
+</div>
 
 <script>
+function colorClass(status) {
+  if (status === "Healthy" || status === "Low Risk" || status === "Present" || status === "Good")
+    return "good";
+  if (status === "Moderate" || status === "Acceptable" || status === "Weak")
+    return "warn";
+  return "bad";
+}
+
 async function analyze() {
   const repo = document.getElementById("repo").value;
+  const loading = document.getElementById("loading");
+  const resultDiv = document.getElementById("result");
 
-  const res = await fetch("/analyze", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ repo_url: repo })
-  });
+  loading.innerText = "Analyzing...";
+  resultDiv.innerHTML = "";
 
-  const data = await res.json();
-  document.getElementById("output").textContent =
-    JSON.stringify(data, null, 2);
+  try {
+    const res = await fetch("/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ repo_url: repo })
+    });
+
+    const data = await res.json();
+
+    loading.innerText = "";
+
+    resultDiv.innerHTML = `
+      <div class="status">
+        <h3>Final Score: ${data.health_score} (${data.status})</h3>
+
+        <div class="metric">
+          <span>Commit Activity</span>
+          <span class="${colorClass(data.metrics.commit_activity)}">${data.metrics.commit_activity}</span>
+        </div>
+
+        <div class="metric">
+          <span>Contributor Diversity</span>
+          <span class="${colorClass(data.metrics.contributors)}">${data.metrics.contributors}</span>
+        </div>
+
+        <div class="metric">
+          <span>PR Hygiene</span>
+          <span class="${colorClass(data.metrics.pull_request_hygiene)}">${data.metrics.pull_request_hygiene}</span>
+        </div>
+
+        <div class="metric">
+          <span>CI/CD</span>
+          <span class="${colorClass(data.metrics.ci_cd)}">${data.metrics.ci_cd}</span>
+        </div>
+
+        <div class="metric">
+          <span>Documentation</span>
+          <span class="${colorClass(data.metrics.documentation)}">${data.metrics.documentation}</span>
+        </div>
+      </div>
+    `;
+
+  } catch (err) {
+    loading.innerText = "";
+    resultDiv.innerHTML = "<div class='status bad'>Invalid repository or server error</div>";
+  }
 }
 </script>
 
