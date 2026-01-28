@@ -179,8 +179,8 @@ async function analyze(){
     `;
 
   }catch(e){
-    loading.innerText="Invalid repository or server error";
-  }
+    console.error("FRONTEND ERROR:", e);
+    throw e;
 }
 
 function renderMetric(name,status){
