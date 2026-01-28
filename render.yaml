@@ -1,0 +1,5 @@
+services:
+  - type: web
+    name: git-repo-health-analyzer
+    env: docker
+    plan: free
