@@ -1,6 +1,8 @@
 class SuggestionsEngine:
 
     def generate(self, metrics):
+        print("SUGGESTION ENGINE METRICS:", metrics)
+
 
         suggestions = []
 
