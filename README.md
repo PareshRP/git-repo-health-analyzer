@@ -1,5 +1,6 @@
-Live Demo: https://git-repo-health-analyzer.onrender.com/
-API Docs: https://git-repo-health-analyzer.onrender.com/docs
+<b>Live Demo:</b> https://git-repo-health-analyzer.onrender.com/
+
+<b>API Docs:</b> https://git-repo-health-analyzer.onrender.com/docs
 
 
 <h1 align="center">📊 Git Repository Health Analyzer</h1>

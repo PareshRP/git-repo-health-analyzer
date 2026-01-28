@@ -12,10 +12,19 @@ from app.core.evaluators.documentation_quality import DocumentationQualityEvalua
 
 from app.core.scoring.aggregator import ScoreAggregator
 
+from app.storage.cache_repository import CacheRepository
+
 
 class AnalysisService:
 
     def analyze(self, owner, repo):
+
+        cache = CacheRepository()
+        repo_key = f"{owner}/{repo}"
+
+        cached = cache.get(repo_key)
+        if cached:
+            return cached
 
         # Validate repo
         RepoCollector().get_repository(owner, repo)
@@ -47,7 +56,7 @@ class AnalysisService:
         # Aggregate score
         final = ScoreAggregator().aggregate(metrics)
 
-        return {
+        result = {
             "repository": f"{owner}/{repo}",
             "health_score": final["score"],
             "status": final["status"],
@@ -59,3 +68,7 @@ class AnalysisService:
                 "documentation": doc_result["status"]
             }
         }
+
+        cache.save(repo_key, result)
+        return result
+
