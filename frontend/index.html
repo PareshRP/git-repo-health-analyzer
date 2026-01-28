@@ -185,13 +185,13 @@ async function analyze(){
 
 function renderMetric(name,status){
 
-  const score=scoreFromStatus(status);
+  const score=scoreFromStatus(status || "Unknown");
 
   return `
   <div class="metric">
     <div class="metric-title">
       <span>${name}</span>
-      <span class="${colorClass(status)}">${status}</span>
+      <span class="${colorClass(status || 'Unknown')}">${status || "Unknown"}</span>
     </div>
     <div class="bar-bg">
       <div class="bar-fill" style="width:${score}%"></div>
