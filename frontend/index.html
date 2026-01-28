@@ -1,222 +1,202 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <meta charset="UTF-8">
 <title>Git Repository Health Analyzer</title>
 
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #0f172a;
-  color: #e5e7eb;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
+body{
+  font-family: Inter, Arial, sans-serif;
+  background:#0f172a;
+  color:#e5e7eb;
+  margin:0;
 }
 
-.card {
-  background: #020617;
-  padding: 32px;
-  border-radius: 10px;
-  width: 520px;
-  box-shadow: 0 0 20px rgba(0,0,0,0.6);
+.container{
+  max-width:900px;
+  margin:auto;
+  padding:60px 20px;
 }
 
-h1 {
-  font-size: 22px;
-  margin-bottom: 6px;
+h1{
+  font-size:34px;
+  margin-bottom:10px;
 }
 
-p {
-  color: #94a3b8;
-  font-size: 14px;
-  margin-bottom: 20px;
+.subtitle{
+  color:#94a3b8;
+  margin-bottom:40px;
 }
 
-input {
-  width: 100%;
-  padding: 10px;
-  border-radius: 6px;
-  border: none;
-  margin-bottom: 12px;
+input{
+  width:100%;
+  padding:14px;
+  border-radius:8px;
+  border:none;
+  font-size:16px;
 }
 
-button {
-  width: 100%;
-  padding: 10px;
-  background: #2563eb;
-  border: none;
-  border-radius: 6px;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
+button{
+  margin-top:14px;
+  padding:12px 22px;
+  background:#2563eb;
+  border:none;
+  border-radius:8px;
+  color:white;
+  font-size:16px;
+  cursor:pointer;
 }
 
-button:hover {
-  background: #1d4ed8;
+button.secondary{
+  background:#334155;
+  margin-left:10px;
 }
 
-.status {
-  margin-top: 20px;
-  padding: 12px;
-  border-radius: 6px;
-  background: #020617;
-  border: 1px solid #1e293b;
+button:hover{
+  background:#1d4ed8;
 }
 
-.metric {
-  display: flex;
-  justify-content: space-between;
-  padding: 6px 0;
-  border-bottom: 1px solid #1e293b;
+.section{
+  margin-top:70px;
 }
 
-.metric:last-child {
-  border-bottom: none;
+.section h2{
+  margin-bottom:25px;
+  border-bottom:1px solid #1e293b;
+  padding-bottom:10px;
 }
 
-.good { color: #22c55e; }
-.warn { color: #facc15; }
-.bad { color: #ef4444; }
+.metric{
+  margin-bottom:25px;
+}
 
-.loading {
-  text-align: center;
-  margin-top: 10px;
-  color: #93c5fd;
+.metric-title{
+  display:flex;
+  justify-content:space-between;
+  font-size:16px;
+}
+
+.bar-bg{
+  background:#020617;
+  height:10px;
+  border-radius:10px;
+  overflow:hidden;
+  margin-top:8px;
+}
+
+.bar-fill{
+  height:10px;
+  background:#22c55e;
+}
+
+.good{color:#22c55e;}
+.warn{color:#facc15;}
+.bad{color:#ef4444;}
+
+.loading{
+  margin-top:20px;
+  color:#93c5fd;
 }
 </style>
 </head>
 
 <body>
 
-<div class="card">
-  <h1>Git Repository Health Analyzer</h1>
-  <p>Analyze engineering health of any public GitHub repository</p>
+<div class="container">
 
-  <input id="repo" placeholder="https://github.com/org/repo"/>
+<h1>Git Repository Health Analyzer</h1>
+<p class="subtitle">Analyze engineering health of any public GitHub repository</p>
 
+<input id="repo" placeholder="https://github.com/org/repo"/>
+
+<div>
   <button onclick="analyze()">Analyze</button>
-  <button onclick="clearUI()" style="margin-top:8px;background:#334155;">
-    Clear
-  </button>
+  <button class="secondary" onclick="clearUI()">Clear</button>
+</div>
 
-  <canvas id="overallChart" height="180"></canvas>
-  <canvas id="radarChart" height="220"></canvas>
+<div id="loading" class="loading"></div>
 
-  <div id="loading" class="loading"></div>
-  <div id="result"></div>
+<div id="results"></div>
+
 </div>
 
 <script>
-function colorClass(status) {
-  if (status === "Healthy" || status === "Low Risk" || status === "Present" || status === "Good")
-    return "good";
-  if (status === "Moderate" || status === "Acceptable" || status === "Weak")
-    return "warn";
-  return "bad";
-}
 
-function clearUI() {
-  document.getElementById("repo").value = "";
-  document.getElementById("loading").innerText = "";
-  document.getElementById("result").innerHTML = "";
-}
-
-let overallChart = null;
-let radarChart = null;
-
-async function analyze() {
-  const repo = document.getElementById("repo").value;
-  const loading = document.getElementById("loading");
-
-  loading.innerText = "Analyzing...";
-
-  try {
-    const res = await fetch("/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ repo_url: repo })
-    });
-
-    const data = await res.json();
-    loading.innerText = "";
-
-    const scores = {
-      "Commit Activity": mapScore(data.metrics.commit_activity),
-      "Contributor Diversity": mapScore(data.metrics.contributors),
-      "PR Hygiene": mapScore(data.metrics.pull_request_hygiene),
-      "CI/CD": mapScore(data.metrics.ci_cd),
-      "Documentation": mapScore(data.metrics.documentation)
-    };
-
-    renderOverallChart(data.health_score);
-    renderRadarChart(scores);
-
-  } catch (err) {
-    loading.innerText = "Invalid repository or server error";
-  }
-}
-
-function mapScore(status){
+function scoreFromStatus(status){
   if(["Healthy","Low Risk","Present","Good"].includes(status)) return 100;
   if(["Moderate","Acceptable","Weak"].includes(status)) return 70;
   return 30;
 }
 
-function renderOverallChart(score){
-  const ctx = document.getElementById("overallChart");
-
-  if(overallChart) overallChart.destroy();
-
-  overallChart = new Chart(ctx,{
-    type:"doughnut",
-    data:{
-      labels:["Health","Remaining"],
-      datasets:[{
-        data:[score,100-score],
-        backgroundColor:["#22c55e","#1e293b"]
-      }]
-    },
-    options:{
-      plugins:{
-        legend:{display:false},
-        title:{
-          display:true,
-          text:`Overall Health Score: ${score}`
-        }
-      }
-    }
-  });
+function colorClass(status){
+  if(["Healthy","Low Risk","Present","Good"].includes(status)) return "good";
+  if(["Moderate","Acceptable","Weak"].includes(status)) return "warn";
+  return "bad";
 }
 
-function renderRadarChart(scores){
-  const ctx = document.getElementById("radarChart");
+function clearUI(){
+  document.getElementById("repo").value="";
+  document.getElementById("loading").innerText="";
+  document.getElementById("results").innerHTML="";
+}
 
-  if(radarChart) radarChart.destroy();
+async function analyze(){
 
-  radarChart = new Chart(ctx,{
-    type:"radar",
-    data:{
-      labels:Object.keys(scores),
-      datasets:[{
-        label:"Repository Health",
-        data:Object.values(scores),
-        backgroundColor:"rgba(37,99,235,0.3)",
-        borderColor:"#2563eb"
-      }]
-    },
-    options:{
-      scales:{
-        r:{
-          min:0,
-          max:100,
-          ticks:{stepSize:20}
-        }
-      }
-    }
-  });
+  const repo=document.getElementById("repo").value;
+  const loading=document.getElementById("loading");
+  const results=document.getElementById("results");
+
+  loading.innerText="Analyzing repository...";
+  results.innerHTML="";
+
+  try{
+    const res=await fetch("/analyze",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({repo_url:repo})
+    });
+
+    const data=await res.json();
+    loading.innerText="";
+
+    results.innerHTML=`
+    <div class="section">
+      <h2>Overall Health</h2>
+      <h3>${data.health_score} / 100 — ${data.status}</h3>
+    </div>
+
+    <div class="section">
+      <h2>Metrics</h2>
+
+      ${renderMetric("Commit Activity",data.metrics.commit_activity)}
+      ${renderMetric("Contributor Diversity",data.metrics.contributors)}
+      ${renderMetric("Pull Request Hygiene",data.metrics.pull_request_hygiene)}
+      ${renderMetric("CI/CD",data.metrics.ci_cd)}
+      ${renderMetric("Documentation",data.metrics.documentation)}
+
+    </div>
+    `;
+
+  }catch(e){
+    loading.innerText="Invalid repository or server error";
+  }
+}
+
+function renderMetric(name,status){
+
+  const score=scoreFromStatus(status);
+
+  return `
+  <div class="metric">
+    <div class="metric-title">
+      <span>${name}</span>
+      <span class="${colorClass(status)}">${status}</span>
+    </div>
+    <div class="bar-bg">
+      <div class="bar-fill" style="width:${score}%"></div>
+    </div>
+  </div>
+  `;
 }
 
 </script>
