@@ -95,7 +95,11 @@ button:hover {
   <p>Analyze engineering health of any public GitHub repository</p>
 
   <input id="repo" placeholder="https://github.com/org/repo"/>
+
   <button onclick="analyze()">Analyze</button>
+  <button onclick="clearUI()" style="margin-top:8px;background:#334155;">
+    Clear
+  </button>
 
   <div id="loading" class="loading"></div>
   <div id="result"></div>
@@ -108,6 +112,12 @@ function colorClass(status) {
   if (status === "Moderate" || status === "Acceptable" || status === "Weak")
     return "warn";
   return "bad";
+}
+
+function clearUI() {
+  document.getElementById("repo").value = "";
+  document.getElementById("loading").innerText = "";
+  document.getElementById("result").innerHTML = "";
 }
 
 async function analyze() {
