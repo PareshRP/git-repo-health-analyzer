@@ -196,6 +196,13 @@ function renderMetric(name,status){
       <div class="bar-fill" style="width:${score}%"></div>
     </div>
   </div>
+
+  <div class="section">
+    <h2>Recommendations</h2>
+    <ul>
+      ${data.suggestions.map(s => `<li>${s}</li>`).join("")}
+    </ul>
+  </div>
   `;
 }
 

@@ -14,6 +14,8 @@ from app.core.scoring.aggregator import ScoreAggregator
 
 from app.storage.cache_repository import CacheRepository
 
+from app.core.suggestions import SuggestionsEngine
+
 
 class AnalysisService:
 
@@ -56,6 +58,8 @@ class AnalysisService:
         # Aggregate score
         final = ScoreAggregator().aggregate(metrics)
 
+        suggestions = SuggestionsEngine().generate(metrics)
+
         result = {
             "repository": f"{owner}/{repo}",
             "health_score": final["score"],
@@ -66,7 +70,8 @@ class AnalysisService:
                 "pull_request_hygiene": pr_result["status"],
                 "ci_cd": ci_result["status"],
                 "documentation": doc_result["status"]
-            }
+            },
+            "suggestions": suggestions
         }
 
         cache.save(repo_key, result)
